@@ -1,9 +1,3 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('form')
-    if (!form) {
-        console.error('Form not found!')
-        return
-    }
     
     form.addEventListener('submit', (event) => {
         event.preventDefault()
@@ -62,4 +56,3 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('taskInput').value = ''
         document.getElementById('taskInput').focus()
     })
-})
