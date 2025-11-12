@@ -1,4 +1,11 @@
-    document.querySelector('form').addEventListener('submit', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('form')
+    if (!form) {
+        console.error('Form not found!')
+        return
+    }
+    
+    form.addEventListener('submit', (event) => {
         event.preventDefault()
 
         const taskText = document.getElementById('taskInput').value.trim()
@@ -55,3 +62,4 @@
         document.getElementById('taskInput').value = ''
         document.getElementById('taskInput').focus()
     })
+})
