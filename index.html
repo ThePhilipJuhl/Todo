@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TO DO app</title>
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/index.js" type="module"></script>
+
     <script>
+      
         tailwind.config = {
             theme: {
                 extend: {
@@ -25,47 +29,30 @@
       </style>
 </head>
 <body class="min-h-screen gradient-bg p-4 sm:p-6 md:p-8 font-pixel">
-    <div class="max-w-md mx-auto">
+    <div class="w-full">
         <!-- Header -->
         <header class="mb-6 sm:mb-8 text-center">
             <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-2 sm:mb-4 text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] tracking-wider">
                 TO DO
             </h1>
-            <div class="bg-white/90 backdrop-blur-sm border-4 border-black rounded-lg p-3 sm:p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)]">
-                <h2 class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
-                    Today
-                </h2>
-            </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="space-y-4 sm:space-y-6">
-            <!-- Form -->
-            <form id="form" class="bg-white/90 backdrop-blur-sm border-4 border-black rounded-lg p-4 sm:p-5 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)]">
-                <div class="flex gap-2 sm:gap-3">
-                    <input 
-                        type="text" 
-                        id="taskInput" 
-                        placeholder="Add a task..." 
-                        class="flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 border-black rounded-md bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-pixel text-sm sm:text-base"
-                    >
-                    <button 
-                        type="submit" 
-                        class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-b from-cyan-400 to-cyan-600 border-2 border-black rounded-md font-bold text-white text-sm sm:text-base shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all active:shadow-none active:translate-x-[4px] active:translate-y-[4px] uppercase tracking-wider"
-                    >
-                        Add
-                    </button>
-                </div>
-            </form>
+        <!-- Folder Creation Button -->
+        <div class="mb-4 flex justify-center">
+            <button 
+                id="createFolderBtn" 
+                class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-b from-purple-400 to-purple-600 border-2 border-black rounded-md font-bold text-white text-sm sm:text-base shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all active:shadow-none active:translate-x-[4px] active:translate-y-[4px] uppercase tracking-wider"
+            >
+                + New Folder
+            </button>
+        </div>
 
-            <!-- Task List -->
-            <section class="bg-white/90 backdrop-blur-sm border-4 border-black rounded-lg p-4 sm:p-5 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] min-h-[200px]">
-                <ul id="Tasklist" class="space-y-2 sm:space-y-3">
-                    <!-- Tasks will be added here -->
-                </ul>
-            </section>
+        <!-- Folders Container (Horizontal Scroll) -->
+        <main class="folders-container">
+            <div id="foldersList" class="flex gap-4 overflow-x-auto pb-4" style="scrollbar-width: thin;">
+                <!-- Folders will be added here -->
+            </div>
         </main>
     </div>
-    <script src="js/index.js"></script>
 </body>
 </html>
