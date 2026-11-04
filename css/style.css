@@ -445,8 +445,8 @@ body {
 
 .folder-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     margin-bottom: 1rem;
     gap: 0.5rem;
 }
@@ -474,6 +474,11 @@ body {
 .folder-actions {
     display: flex;
     gap: 0.25rem;
+}
+
+/* Keep delete apart from the other buttons so it's harder to hit by accident */
+.folder-actions .folder-delete-btn {
+    margin-left: auto;
 }
 
 .folder-move-btn,
