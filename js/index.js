@@ -156,6 +156,10 @@ function toDateTimeLocal(timestamp) {
 // Update countdowns and overdue glow in place (no re-render, so drags aren't interrupted)
 function refreshDeadlines() {
     folders.forEach(folder => {
+        // A minimized folder hides its tasks, so flag overdue ones on the header instead
+        const folderEl = document.querySelector(`#foldersList .folder-item[data-folder-id="${folder.id}"]`);
+        if (folderEl) folderEl.classList.toggle('has-overdue', folder.tasks.some(isOverdue));
+
         folder.tasks.forEach(task => {
             if (!task.due) return;
             const card = document.querySelector(`#foldersList .folder-item[data-folder-id="${folder.id}"] .task-card[data-task-id="${task.id}"]`);
@@ -320,7 +324,8 @@ function renderFolder(folder) {
         folderElement.style.maxWidth = '280px';
         foldersList.appendChild(folderElement);
     }
-    
+    folderElement.classList.toggle('minimized', !!folder.minimized);
+
     folderElement.innerHTML = `
         <div class="folder-card" style="background-color: ${folder.color.bg};">
             <div class="folder-header">
@@ -329,6 +334,7 @@ function renderFolder(folder) {
                     <span class="folder-count">${folder.tasks.length}</span>
                 </div>
                 <div class="folder-actions">
+                    <button class="folder-move-btn folder-minimize-btn" data-folder-id="${folder.id}" title="${folder.minimized ? 'Expand' : 'Minimize'}">${folder.minimized ? '▢' : '–'}</button>
                     <button class="folder-move-btn" data-action="left" data-folder-id="${folder.id}" title="Move left">←</button>
                     <button class="folder-move-btn" data-action="right" data-folder-id="${folder.id}" title="Move right">→</button>
                     <button class="folder-delete-btn" data-folder-id="${folder.id}" title="Delete folder">×</button>
@@ -492,8 +498,32 @@ function attachFolderEventListeners(folderElement, folder) {
         });
     }
     
+    // Minimize / expand folder
+    const minimizeBtn = folderElement.querySelector('.folder-minimize-btn');
+    minimizeBtn.addEventListener('click', () => {
+        folder.minimized = !folder.minimized;
+        folderElement.classList.toggle('minimized', folder.minimized);
+        minimizeBtn.textContent = folder.minimized ? '▢' : '–';
+        minimizeBtn.title = folder.minimized ? 'Expand' : 'Minimize';
+
+        // Wiggle on expand too (minimize gets it via the .minimized class)
+        folderElement.classList.remove('just-expanded');
+        if (!folder.minimized) {
+            void folderElement.offsetWidth; // restart animation
+            folderElement.classList.add('just-expanded');
+            const onEnd = (ev) => {
+                if (ev.target !== folderElement) return; // ignore child animations
+                folderElement.classList.remove('just-expanded');
+                folderElement.removeEventListener('animationend', onEnd);
+            };
+            folderElement.addEventListener('animationend', onEnd);
+        }
+        saveFolders();
+        refreshDeadlines();
+    });
+
     // Folder move buttons
-    folderElement.querySelectorAll('.folder-move-btn').forEach(btn => {
+    folderElement.querySelectorAll('.folder-move-btn[data-action]').forEach(btn => {
         btn.addEventListener('click', function() {
             const action = this.getAttribute('data-action');
             moveFolder(folder.id, action);
