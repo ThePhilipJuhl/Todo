@@ -537,7 +537,7 @@ const MOUSE_MOVE_START = 5;  // px a mouse can move to start dragging right away
 const TOUCH_CANCEL = 10;     // px a finger can move before the hold is cancelled (lets the list scroll)
 
 function enableTaskDrag(card, folder, folderElement) {
-    enableHoldDrag(card, (x, y) => startDrag(card, folder, folderElement, y));
+    enableHoldDrag(card, (x, y) => startDrag(card, folder, folderElement, x, y));
 }
 
 function enableFolderDrag(folderElement) {
@@ -587,9 +587,11 @@ function enableHoldDrag(handle, onStart) {
     });
 }
 
-function startDrag(card, folder, folderElement, pointerStartY) {
-    const list = folderElement.querySelector('.folder-tasks');
+function startDrag(card, folder, folderElement, pointerStartX, pointerStartY) {
+    const foldersList = document.getElementById('foldersList');
+    let list = folderElement.querySelector('.folder-tasks');
     const rect = card.getBoundingClientRect();
+    const offsetX = pointerStartX - rect.left;
     const offsetY = pointerStartY - rect.top;
 
     // Floating copy that follows the pointer
@@ -608,13 +610,41 @@ function startDrag(card, folder, folderElement, pointerStartY) {
     const sweatTimer = setInterval(() => spawnSweatDrop(ghost), 280);
     spawnSweatDrop(ghost);
 
+    let lastX = pointerStartX;
     let lastY = pointerStartY;
     let scrollFrame = null;
+    let hoverFolderEl = folderElement;
 
-    function moveGhost(clientY) {
+    function moveGhost(clientX, clientY) {
+        lastX = clientX;
         lastY = clientY;
+        ghost.style.left = (clientX - offsetX) + 'px';
         ghost.style.top = (clientY - offsetY) + 'px';
-        reorderPlaceholder(clientY);
+        updateTarget(clientX, clientY);
+    }
+
+    // Which folder column is the pointer over?
+    function folderUnder(clientX) {
+        return [...foldersList.querySelectorAll('.folder-item')].find(el => {
+            const r = el.getBoundingClientRect();
+            return clientX >= r.left && clientX <= r.right;
+        });
+    }
+
+    function updateTarget(clientX, clientY) {
+        const over = folderUnder(clientX);
+        if (over && over !== hoverFolderEl) {
+            hoverFolderEl = over;
+            list = over.querySelector('.folder-tasks');
+            // Placeholder takes the colour of the folder it will land in
+            const target = folders.find(f => f.id === over.getAttribute('data-folder-id'));
+            if (target) card.style.backgroundColor = target.color.card;
+            foldersList.querySelectorAll('.task-drop-target').forEach(el => el.classList.remove('task-drop-target'));
+            if (over !== folderElement) over.classList.add('task-drop-target');
+            // Minimized folders hide their list, so just drop at the end
+            if (over.classList.contains('minimized')) list.appendChild(card);
+        }
+        if (!hoverFolderEl.classList.contains('minimized')) reorderPlaceholder(clientY);
     }
 
     function reorderPlaceholder(clientY) {
@@ -624,7 +654,7 @@ function startDrag(card, folder, folderElement, pointerStartY) {
             return clientY < r.top + r.height / 2;
         });
         const currentNext = card.nextElementSibling;
-        if (before ? before === currentNext : currentNext === null) return;
+        if (card.parentElement === list && (before ? before === currentNext : currentNext === null)) return;
 
         // FLIP: remember positions, move, then animate from old to new
         const firstRects = new Map(siblings.map(el => [el, el.getBoundingClientRect().top]));
@@ -641,19 +671,22 @@ function startDrag(card, folder, folderElement, pointerStartY) {
         });
     }
 
-    // Scroll the task list when dragging near its top/bottom edge
+    // Scroll the task list near its top/bottom edge, and the folder row near its sides
     function autoScroll() {
         const r = list.getBoundingClientRect();
         const edge = 40;
         if (lastY < r.top + edge) list.scrollTop -= 8;
         else if (lastY > r.bottom - edge) list.scrollTop += 8;
-        reorderPlaceholder(lastY);
+        const fr = foldersList.getBoundingClientRect();
+        if (lastX < fr.left + 60) foldersList.scrollLeft -= 10;
+        else if (lastX > fr.right - 60) foldersList.scrollLeft += 10;
+        updateTarget(lastX, lastY);
         scrollFrame = requestAnimationFrame(autoScroll);
     }
     scrollFrame = requestAnimationFrame(autoScroll);
 
     function onMove(ev) {
-        moveGhost(ev.clientY);
+        moveGhost(ev.clientX, ev.clientY);
     }
 
     function preventTouchScroll(ev) {
@@ -667,23 +700,44 @@ function startDrag(card, folder, folderElement, pointerStartY) {
         window.removeEventListener('touchmove', preventTouchScroll);
         clearInterval(sweatTimer);
         cancelAnimationFrame(scrollFrame);
+        foldersList.querySelectorAll('.task-drop-target').forEach(el => el.classList.remove('task-drop-target'));
 
-        // Settle the ghost into the placeholder's spot
-        const target = card.getBoundingClientRect();
+        const targetFolderEl = card.closest('.folder-item');
+        const targetFolder = folders.find(f => f.id === targetFolderEl.getAttribute('data-folder-id'));
+        const moved = targetFolder && targetFolder !== folder;
+
+        // Settle the ghost into the placeholder's spot (or onto a minimized folder)
+        const target = targetFolderEl.classList.contains('minimized')
+            ? targetFolderEl.getBoundingClientRect()
+            : card.getBoundingClientRect();
         ghost.classList.add('task-card-ghost-drop');
         ghost.style.top = target.top + 'px';
         ghost.style.left = target.left + 'px';
+
+        // Save new order from the DOM
+        const taskId = card.getAttribute('data-task-id');
+        const order = [...list.querySelectorAll('.task-card')].map(el => el.getAttribute('data-task-id'));
+        if (moved) {
+            const task = folder.tasks.find(t => t.id === taskId);
+            folder.tasks = folder.tasks.filter(t => t.id !== taskId);
+            targetFolder.tasks.push(task);
+            targetFolder.tasks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+        } else {
+            folder.tasks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+        }
+        saveFolders();
 
         setTimeout(() => {
             ghost.remove();
             card.classList.remove('task-card-placeholder');
             document.body.classList.remove('is-dragging-task');
+            if (moved) {
+                // Re-render both so colours, counts and click handlers match the new folder
+                renderFolder(folder);
+                renderFolder(targetFolder);
+                refreshDeadlines();
+            }
         }, 180);
-
-        // Save new order from the DOM
-        const order = [...list.querySelectorAll('.task-card')].map(el => el.getAttribute('data-task-id'));
-        folder.tasks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-        saveFolders();
     }
 
     window.addEventListener('pointermove', onMove);

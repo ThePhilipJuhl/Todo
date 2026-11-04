@@ -655,6 +655,12 @@ body.is-dragging-task * {
     visibility: hidden;
 }
 
+/* Folder a dragged task will move into */
+.folder-item.task-drop-target .folder-card {
+    outline: 3px dashed var(--color-black);
+    outline-offset: 3px;
+}
+
 /* Floating card following the pointer */
 .task-card-ghost {
     position: fixed;
