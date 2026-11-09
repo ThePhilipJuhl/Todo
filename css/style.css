@@ -398,6 +398,30 @@ body {
 }
 
 /* Folder Styles */
+/* Random phrase that floats up when clicking the background */
+.phrase-text {
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 22px;
+    color: #fff;
+    text-shadow:
+        0 0 10px rgba(240, 147, 251, 0.9),
+        2px 2px 0px rgba(0, 0, 0, 0.8),
+        -1px -1px 0px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    animation: phrase-float 1.6s ease-out forwards;
+}
+
+@keyframes phrase-float {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6) rotate(-4deg); }
+    15%  { opacity: 1; transform: translate(-50%, -60%) scale(1.1) rotate(2deg); }
+    70%  { opacity: 1; transform: translate(-50%, -150%) scale(1) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, -200%) scale(1) rotate(0deg); }
+}
+
 .folders-container {
     width: 100%;
     overflow-x: auto;

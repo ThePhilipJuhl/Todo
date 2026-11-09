@@ -908,9 +908,63 @@ function renderFolders() {
     });
 }
 
+// Random phrases shown when clicking the background
+const backgroundPhrases = [
+    'always somewhere',
+    'samme som før',
+    'sådan en dag',
+    'hooked on a feeling',
+    'brandy',
+    'With or Without you',
+    'red red wine',
+    'angel',
+    'you sexy thing',
+    'hurtige hænder',
+    'DAARLIGT',
+    'kids',
+    'affection',
+    'u say',
+    'wonderwall',
+];
+let lastPhraseIndex = -1;
+
+function showBackgroundPhrase(x, y) {
+    // Pick a random phrase, but never the same one twice in a row
+    let index;
+    do {
+        index = Math.floor(Math.random() * backgroundPhrases.length);
+    } while (index === lastPhraseIndex);
+    lastPhraseIndex = index;
+
+    const phrase = document.createElement('div');
+    phrase.className = 'phrase-text';
+    phrase.textContent = backgroundPhrases[index];
+    phrase.style.left = x + 'px';
+    phrase.style.top = y + 'px';
+    document.body.appendChild(phrase);
+    phrase.addEventListener('animationend', () => phrase.remove());
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     loadFolders();
+
+    // Clicking empty background space shows a random phrase
+    const header = document.querySelector('header');
+    const backgroundElements = new Set([
+        document.body,
+        document.body.firstElementChild,
+        header,
+        header.querySelector('h1'),
+        document.getElementById('createFolderBtn').parentElement,
+        document.querySelector('main'),
+        document.getElementById('foldersList'),
+    ]);
+    document.addEventListener('click', (e) => {
+        if (backgroundElements.has(e.target)) {
+            showBackgroundPhrase(e.clientX, e.clientY);
+        }
+    });
 
     // Keep deadline countdowns and overdue warnings up to date
     setInterval(refreshDeadlines, 1000);
