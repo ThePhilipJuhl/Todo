@@ -330,11 +330,12 @@ function renderFolder(folder) {
         <div class="folder-card" style="background-color: ${folder.color.bg};">
             <div class="folder-header">
                 <div class="folder-title" style="background-color: ${folder.color.bg};">
-                    <span>${folder.name}</span>
+                    <span class="folder-title-text" title="Double-click to rename">${escapeHtml(folder.name)}</span>
                     <span class="folder-count">${folder.tasks.length}</span>
                 </div>
                 <div class="folder-actions">
                     <button class="folder-move-btn folder-minimize-btn" data-folder-id="${folder.id}" title="${folder.minimized ? 'Expand' : 'Minimize'}">${folder.minimized ? '▢' : '–'}</button>
+                    <button class="folder-move-btn folder-rename-btn" title="Rename">✎</button>
                     <button class="folder-move-btn" data-action="left" data-folder-id="${folder.id}" title="Move left">←</button>
                     <button class="folder-move-btn" data-action="right" data-folder-id="${folder.id}" title="Move right">→</button>
                     <button class="folder-delete-btn" data-folder-id="${folder.id}" title="Delete folder">×</button>
@@ -498,6 +499,10 @@ function attachFolderEventListeners(folderElement, folder) {
         });
     }
     
+    // Rename folder: double-click the title or press the pencil
+    folderElement.querySelector('.folder-title').addEventListener('dblclick', () => startTitleEdit(folderElement, folder));
+    folderElement.querySelector('.folder-rename-btn').addEventListener('click', () => startTitleEdit(folderElement, folder));
+
     // Minimize / expand folder
     const minimizeBtn = folderElement.querySelector('.folder-minimize-btn');
     minimizeBtn.addEventListener('click', () => {
@@ -529,6 +534,162 @@ function attachFolderEventListeners(folderElement, folder) {
             moveFolder(folder.id, action);
         });
     });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ---------- Renaming folders ----------
+function startTitleEdit(folderElement, folder) {
+    const titleText = folderElement.querySelector('.folder-title-text');
+    if (!titleText || folderElement.classList.contains('editing-title')) return;
+    folderElement.classList.add('editing-title');
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'folder-title-input';
+    input.value = folder.name;
+    input.maxLength = 40;
+    titleText.replaceWith(input);
+    input.focus();
+    input.select();
+
+    // Curious eyes pop up over the folder and watch what you type
+    const eyes = document.createElement('div');
+    eyes.className = 'folder-eyes title-eyes curious';
+    eyes.innerHTML = `
+        <div class="eye-wrap"><div class="folder-brow"></div><div class="folder-eye"><div class="folder-pupil"></div></div></div>
+        <div class="eye-wrap"><div class="folder-brow"></div><div class="folder-eye"><div class="folder-pupil"></div></div></div>
+    `;
+    document.body.appendChild(eyes);
+
+    // Keep the eyes on top of the folder, even when the page or folder row scrolls
+    let frame;
+    function followFolder() {
+        const r = folderElement.getBoundingClientRect();
+        eyes.style.left = (r.left + r.width / 2) + 'px';
+        eyes.style.top = r.top + 'px';
+        frame = requestAnimationFrame(followFolder);
+    }
+    followFolder();
+
+    // Point the pupils down at the text cursor
+    const measure = document.createElement('canvas').getContext('2d');
+    function lookAtCaret() {
+        const style = getComputedStyle(input);
+        measure.font = style.font;
+        const caret = input.selectionEnd ?? input.value.length;
+        const textWidth = measure.measureText(input.value.slice(0, caret)).width;
+        const inputRect = input.getBoundingClientRect();
+        const caretX = inputRect.left + parseFloat(style.paddingLeft) + textWidth - input.scrollLeft;
+        const eyesRect = eyes.getBoundingClientRect();
+        const offset = (caretX - (eyesRect.left + eyesRect.width / 2)) / 12;
+        eyes.style.setProperty('--look-x', Math.max(-6, Math.min(6, offset)) + 'px');
+    }
+    lookAtCaret();
+
+    input.addEventListener('input', () => {
+        lookAtCaret();
+        // Little curious hop on every keystroke
+        eyes.classList.remove('peek');
+        void eyes.offsetWidth;
+        eyes.classList.add('peek');
+    });
+    input.addEventListener('keyup', lookAtCaret);
+    input.addEventListener('click', lookAtCaret);
+
+    let finished = false;
+    function finish(save) {
+        if (finished) return;
+        finished = true;
+
+        const newName = input.value.trim();
+        const changed = save && newName !== '' && newName !== folder.name;
+        if (changed) {
+            folder.name = newName;
+            saveFolders();
+        }
+
+        const span = document.createElement('span');
+        span.className = 'folder-title-text';
+        span.title = 'Double-click to rename';
+        span.textContent = folder.name;
+        input.replaceWith(span);
+        folderElement.classList.remove('editing-title');
+
+        function closeEyes() {
+            eyes.classList.add('closing');
+            setTimeout(() => {
+                cancelAnimationFrame(frame);
+                eyes.remove();
+            }, 500);
+        }
+
+        if (changed) {
+            eyes.classList.remove('curious', 'peek');
+            eyes.classList.add('happy');
+            celebrateRename(folderElement);
+            setTimeout(closeEyes, 1300);
+        } else {
+            closeEyes();
+        }
+    }
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape') { finish(false); }
+    });
+    input.addEventListener('blur', () => finish(true));
+}
+
+// Shake the folder like a piggy bank so coins fall out
+function celebrateRename(folderElement) {
+    const card = folderElement.querySelector('.folder-card');
+    card.classList.remove('rename-shake');
+    void card.offsetWidth; // restart animation
+    card.classList.add('rename-shake');
+    card.addEventListener('animationend', function onEnd(ev) {
+        if (ev.target !== card) return;
+        card.classList.remove('rename-shake');
+        card.removeEventListener('animationend', onEnd);
+    });
+
+    const coinCount = 14;
+    for (let i = 0; i < coinCount; i++) {
+        setTimeout(() => dropCoin(card.getBoundingClientRect()), i * 45);
+    }
+}
+
+function dropCoin(rect) {
+    const coin = document.createElement('div');
+    coin.className = 'coin';
+    document.body.appendChild(coin);
+
+    // Coins tumble out of the bottom of the folder
+    let x = rect.left + 20 + Math.random() * (rect.width - 40);
+    let y = Math.min(rect.bottom, window.innerHeight - 30) - 10;
+    let vx = (Math.random() - 0.5) * 5;
+    let vy = -3 - Math.random() * 4;
+    const gravity = 0.4;
+    const start = performance.now();
+
+    function animate(now) {
+        vy += gravity;
+        x += vx;
+        y += vy;
+        const age = now - start;
+        coin.style.transform = `translate(${x}px, ${y}px)`;
+        coin.style.opacity = age > 1100 ? Math.max(0, 1 - (age - 1100) / 400) : 1;
+        if (age < 1500 && y < window.innerHeight + 40) {
+            requestAnimationFrame(animate);
+        } else {
+            coin.remove();
+        }
+    }
+    requestAnimationFrame(animate);
 }
 
 // Drag & drop reordering of tasks within a folder

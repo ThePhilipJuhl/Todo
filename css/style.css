@@ -1075,3 +1075,157 @@ body.is-dragging-task * {
     0%, 100% { transform: scale(1); box-shadow: 0 0 4px 1px rgba(255, 40, 40, 0.6); }
     50%      { transform: scale(1.2); box-shadow: 0 0 12px 4px rgba(255, 30, 30, 0.95); }
 }
+
+/* ---------- Renaming folders ---------- */
+.folder-title-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.1rem 0.4rem;
+    font: inherit;
+    font-weight: bold;
+    color: var(--color-black);
+    text-shadow: none;
+    background: rgba(255, 255, 255, 0.92);
+    border: 2px solid var(--color-black);
+    border-radius: 0.25rem;
+    outline: none;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.folder-rename-btn {
+    font-size: 0.95rem;
+}
+
+/* Eyes that peek over a folder while its title is being edited */
+.folder-eyes.title-eyes {
+    position: fixed;
+    margin-top: -30px;
+    z-index: 1001;
+    pointer-events: none;
+}
+
+.eye-wrap {
+    position: relative;
+}
+
+.folder-brow {
+    position: absolute;
+    top: -9px;
+    left: 3px;
+    width: 22px;
+    height: 4px;
+    background: var(--color-black);
+    border-radius: 2px;
+    transition: transform 0.2s ease;
+}
+
+/* Curious: one eyebrow raised, pupils looking down at the text */
+.title-eyes.curious .eye-wrap:first-child .folder-brow {
+    transform: translateY(-5px) rotate(-12deg);
+}
+
+.title-eyes.curious .eye-wrap:last-child .folder-brow {
+    transform: rotate(6deg);
+}
+
+.title-eyes.curious .folder-pupil {
+    animation: none;
+    transform: translate(var(--look-x, 0px), 6px);
+    transition: transform 0.12s ease-out;
+}
+
+.title-eyes.peek {
+    animation: eyes-peek 0.22s ease-out;
+}
+
+@keyframes eyes-peek {
+    0%   { transform: translateX(-50%) translateY(0); }
+    40%  { transform: translateX(-50%) translateY(-5px) rotate(-3deg); }
+    100% { transform: translateX(-50%) translateY(0); }
+}
+
+/* Happy: eyes turn into ^ ^ and bounce */
+.title-eyes.happy {
+    animation: eyes-happy 0.45s ease-in-out 2;
+}
+
+.title-eyes.happy .folder-eye {
+    height: 18px;
+    margin-top: 8px;
+    background: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+    border-right-color: transparent;
+    border-width: 4px;
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    animation: none;
+}
+
+.title-eyes.happy .folder-pupil {
+    display: none;
+}
+
+.title-eyes.happy .folder-brow {
+    transform: translateY(-3px);
+}
+
+@keyframes eyes-happy {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-7px); }
+}
+
+/* Folder shake after a rename */
+.folder-card.rename-shake {
+    animation: rename-shake 0.6s ease-in-out;
+}
+
+@keyframes rename-shake {
+    0%   { transform: rotate(0deg); }
+    15%  { transform: rotate(-4deg) translateY(-4px); }
+    30%  { transform: rotate(4deg) translateY(-2px); }
+    45%  { transform: rotate(-3deg); }
+    60%  { transform: rotate(3deg); }
+    75%  { transform: rotate(-1.5deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* Falling coins */
+.coin {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1002;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    pointer-events: none;
+    will-change: transform, opacity;
+}
+
+.coin::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: 2px solid #7a5200;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff6b0 0 15%, #ffd93d 40%, #e0a800 100%);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+    animation: coin-spin 0.5s linear infinite;
+}
+
+@keyframes coin-spin {
+    0%, 100% { transform: scaleX(1); }
+    50%      { transform: scaleX(0.15); }
+}
+
+/* Closing must win over the happy/curious styles above */
+.folder-eyes.title-eyes.closing {
+    animation: eyes-sink 0.3s ease-in 0.2s forwards;
+}
+
+.folder-eyes.title-eyes.closing .folder-eye {
+    animation: eye-close 0.2s ease-in forwards;
+}
