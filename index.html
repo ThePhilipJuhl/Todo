@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TO DO app</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="js/index.js" type="module"></script>
+    <script src="js/index.js?v=2" type="module"></script>
 
     <script>
       
@@ -54,5 +54,17 @@
             </div>
         </main>
     </div>
+
+    <!-- Greet first, then show the normal title after 2 seconds.
+         Kept separate from js/index.js so an error there can't block it. -->
+    <script>
+        setTimeout(() => {
+            const appTitle = document.getElementById('appTitle');
+            appTitle.classList.add('title-swap');
+            // Swap the text halfway through the animation, while it's squished
+            setTimeout(() => { appTitle.textContent = 'TO DO'; }, 200);
+            appTitle.addEventListener('animationend', () => appTitle.classList.remove('title-swap'), { once: true });
+        }, 2000);
+    </script>
 </body>
 </html>

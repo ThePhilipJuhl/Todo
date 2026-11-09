@@ -1110,15 +1110,6 @@ function showBackgroundPhrase(x, y) {
 document.addEventListener('DOMContentLoaded', () => {
     loadFolders();
 
-    // Greet first, then show the normal title after 2 seconds
-    const appTitle = document.getElementById('appTitle');
-    setTimeout(() => {
-        appTitle.classList.add('title-swap');
-        // Swap the text halfway through the animation, while it's squished
-        setTimeout(() => { appTitle.textContent = 'TO DO'; }, 200);
-        appTitle.addEventListener('animationend', () => appTitle.classList.remove('title-swap'), { once: true });
-    }, 2000);
-
     // Clicking empty background space shows a random phrase
     const header = document.querySelector('header');
     const backgroundElements = new Set([
